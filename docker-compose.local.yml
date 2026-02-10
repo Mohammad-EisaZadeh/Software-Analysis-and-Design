@@ -1,0 +1,152 @@
+# Simplified local development setup
+# Uses SQLite databases (no PostgreSQL containers needed)
+# Run with: docker compose -f docker-compose.local.yml up
+
+services:
+  # Message Broker
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  # Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # Services (using SQLite)
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile.local
+    environment:
+      PORT: 3002
+      JWT_SECRET: your-secret-key-change-in-production
+      DB_TYPE: sqlite
+    volumes:
+      - ./services/auth-service/data:/app/data
+    ports:
+      - "3002:3002"
+
+  resource-service:
+    build:
+      context: ./services/resource-service
+      dockerfile: Dockerfile.local
+    environment:
+      PORT: 3003
+      DB_TYPE: sqlite
+    volumes:
+      - ./services/resource-service/data:/app/data
+    ports:
+      - "3003:3003"
+
+  marketplace-service:
+    build:
+      context: ./services/marketplace-service
+      dockerfile: Dockerfile.local
+    environment:
+      PORT: 3004
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      REDIS_URL: redis://redis:6379
+      DB_TYPE: sqlite
+    volumes:
+      - ./services/marketplace-service/data:/app/data
+    depends_on:
+      - rabbitmq
+      - redis
+    ports:
+      - "3004:3004"
+
+  elearning-service:
+    build:
+      context: ./services/elearning-service
+      dockerfile: Dockerfile.local
+    environment:
+      PORT: 3005
+      NOTIFICATION_SERVICE_URL: http://notification-service:3006
+      DB_TYPE: sqlite
+    volumes:
+      - ./services/elearning-service/data:/app/data
+    ports:
+      - "3005:3005"
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile.local
+    environment:
+      PORT: 3006
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      DB_TYPE: sqlite
+    volumes:
+      - ./services/notification-service/data:/app/data
+    depends_on:
+      - rabbitmq
+    ports:
+      - "3006:3006"
+
+  iot-service:
+    build:
+      context: ./services/iot-service
+      dockerfile: Dockerfile.local
+    environment:
+      PORT: 3007
+      DB_TYPE: sqlite
+    volumes:
+      - ./services/iot-service/data:/app/data
+    ports:
+      - "3007:3007"
+
+  shuttle-service:
+    build:
+      context: ./services/shuttle-service
+      dockerfile: Dockerfile.local
+    environment:
+      PORT: 3008
+      DB_TYPE: sqlite
+    volumes:
+      - ./services/shuttle-service/data:/app/data
+    ports:
+      - "3008:3008"
+
+  # API Gateway
+  api-gateway:
+    build: ./gateway
+    environment:
+      PORT: 3001
+      JWT_SECRET: your-secret-key-change-in-production
+      FRONTEND_URL: http://localhost:3000
+      AUTH_SERVICE_URL: http://auth-service:3002
+      RESOURCES_SERVICE_URL: http://resource-service:3003
+      MARKETPLACE_SERVICE_URL: http://marketplace-service:3004
+      ELEARNING_SERVICE_URL: http://elearning-service:3005
+      NOTIFICATIONS_SERVICE_URL: http://notification-service:3006
+      IOT_SERVICE_URL: http://iot-service:3007
+      SHUTTLE_SERVICE_URL: http://shuttle-service:3008
+    depends_on:
+      - auth-service
+      - resource-service
+      - marketplace-service
+      - elearning-service
+      - notification-service
+      - iot-service
+      - shuttle-service
+    ports:
+      - "3001:3001"
+
+volumes:
+  rabbitmq_data:
+  redis_data:
+
+
+
+

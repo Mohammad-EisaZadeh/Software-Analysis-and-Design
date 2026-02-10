@@ -1,0 +1,22 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install sqlite3 dependencies
+RUN apk add --no-cache python3 make g++ sqlite
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+# Create data directory
+RUN mkdir -p data
+
+EXPOSE 3002
+
+CMD ["node", "src/index-sqlite.js"]
+
+
+
+

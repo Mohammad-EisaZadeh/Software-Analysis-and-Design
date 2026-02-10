@@ -1,0 +1,28 @@
+{
+  "name": "marketplace-service",
+  "version": "1.0.0",
+  "description": "Marketplace Service with Saga Pattern",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "seed": "node src/seed.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.11.3",
+    "amqplib": "^0.10.3",
+    "redis": "^4.6.10",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
+
+
+
+
+
