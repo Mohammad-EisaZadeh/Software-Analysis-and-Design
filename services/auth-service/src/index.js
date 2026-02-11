@@ -37,6 +37,23 @@ const initDB = async () => {
       CREATE INDEX IF NOT EXISTS idx_users_tenant ON users(tenant_id);
     `);
     console.log('Database initialized');
+
+    // Automatically create admin user if none exists
+    const adminCheck = await client.query(
+      'SELECT id FROM users WHERE role = $1 LIMIT 1',
+      ['admin']
+    );
+
+    if (adminCheck.rows.length === 0) {
+      const passwordHash = await bcrypt.hash('password123', 10);
+      await client.query(
+        'INSERT INTO users (name, email, password_hash, role, tenant_id) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (email) DO NOTHING',
+        ['Admin User', 'admin@university.edu', passwordHash, 'admin', 'tenant-1']
+      );
+      console.log('✅ Initial admin user created: admin@university.edu / password123');
+    } else {
+      console.log('✅ Admin user already exists');
+    }
   } catch (error) {
     console.error('Database initialization error:', error);
   } finally {

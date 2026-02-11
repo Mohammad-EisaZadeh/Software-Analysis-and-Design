@@ -32,6 +32,31 @@ const initDB = () => {
     db.run(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_users_tenant ON users(tenant_id)`);
     console.log('SQLite database initialized');
+
+    // Automatically create admin user if none exists
+    db.get('SELECT id FROM users WHERE role = ? LIMIT 1', ['admin'], async (err, row) => {
+      if (err) {
+        console.error('Error checking for admin user:', err);
+        return;
+      }
+
+      if (!row) {
+        const passwordHash = await bcrypt.hash('password123', 10);
+        db.run(
+          'INSERT OR IGNORE INTO users (name, email, password_hash, role, tenant_id) VALUES (?, ?, ?, ?, ?)',
+          ['Admin User', 'admin@university.edu', passwordHash, 'admin', 'tenant-1'],
+          function(err) {
+            if (err) {
+              console.error('Error creating admin user:', err);
+            } else {
+              console.log('✅ Initial admin user created: admin@university.edu / password123');
+            }
+          }
+        );
+      } else {
+        console.log('✅ Admin user already exists');
+      }
+    });
   });
 };
 
